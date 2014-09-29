@@ -15,11 +15,11 @@ Current version of Model Exporter supports two programming languages : Swift & O
 
 Construct & Edit  your class hierarchy using following hotkeys:
 
-	Control + N  			    -> add sibling node (either a sibling class or a sibling property)
-	Control + M  			    -> add child node (add a property node to the selected class node)
+	Control + N  			-> add sibling node (either a sibling class or a sibling property)
+	Control + M  			-> add child node (add a property node to the selected class node)
 	Control + Backspace 	-> remove selected node and its child nodes from your class hierarchy
 	Control + Arrow keys 	-> change selected node using arrow keys
-	Double Click 			    -> edit names of the classes and properties
+	Double Click 			-> edit names of the classes and properties
 
 
 How to write types of the properties:
@@ -37,10 +37,10 @@ Model Exporter uses the type notations declared above for both Swift and Objecti
 
 Therefore, following conversions should be made for Objective-C types:
 
-	-bool   		  - Bool
-	-int 			    -	Int
-	-double 		  -	Double
-	-float 			  -	Float
-	-NSString		  -	String
-	-NSArray		  -	[typeOfElements]
-	-NSDictionary -	[typeOfKeys:typeOfValues]
+	-bool   		- Bool
+	-int 			- Int
+	-double 		- Double
+	-float 			- Float
+	-NSString		- String
+	-NSArray		- [typeOfElements]
+	-NSDictionary 	- [typeOfKeys:typeOfValues]
