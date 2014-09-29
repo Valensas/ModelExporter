@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <title>JSON Class Exporter -Preview-</title>
+
+  <script src="fancytree/lib/jquery.js" type="text/javascript"></script>
+  <script src="fancytree/lib/jquery-ui.custom.js" type="text/javascript"></script>
+
+  <link href="highlight/styles/xcode.css" rel="stylesheet">
+  <script src="highlight/highlight.pack.js"></script>
+
+  <script src="DataModel.js" type="text/javascript"></script>
+  <script src="StringUtilityFunctions.js" type="text/javascript"></script>
+  <script src="DataModelToSwift.js" type="text/javascript"></script>
+  <script src="DataModelToObjC.js" type="text/javascript"></script>
+  <script src="SaveLoad.js" type="text/javascript"></script>
+
+  <script type="text/javascript">
+    function getParameterByName(name) {
+      var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+      return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+    }
+
+    $(function(){
+      var code = "";
+
+      var type = getParameterByName("type");
+      var dataModel = loadModel(1);
+
+      $("#codeTextField").text('');
+
+      if (type == "swift"){
+        code = modelToSwift(dataModel);
+        for (var i = 0; i<code.length; i++){
+          $("#codeTextField").append(code[i]);
+        }
+      }else if (type == "objc"){
+        code = modelToObjC(dataModel);
+        for (var i = 0; i<code.length; i++){
+          $("#codeTextField").append(code[i].headerStr);
+          $("#codeTextField").append(code[i].classStr);
+        }
+      }else{
+        alert("invalid parameter name is passed");
+      }
+      hljs.initHighlighting();
+    });
+
+  </script>
+
+</head>
+
+<body class="preview">
+
+<pre><code id="codeTextField"></code></pre>
+
+</body>
+</html>

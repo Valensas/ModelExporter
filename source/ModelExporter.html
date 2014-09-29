@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <title>JSON Model Exporter</title>
+
+  <script src="fancytree/lib/jquery.js" type="text/javascript"></script>
+  <script src="fancytree/lib/jquery-ui.custom.js" type="text/javascript"></script>
+
+  <link href="fancytree/src/skin-lion/ui.fancytree.css" rel="stylesheet" type="text/css">
+  <script src="fancytree/src/jquery.fancytree.js" type="text/javascript"></script>
+  <script src="fancytree/src/jquery.fancytree.edit.js" type="text/javascript"></script>
+  <script src="fancytree/src/jquery.fancytree.table.js" type="text/javascript"></script>
+  <script src="fancytree/src/jquery.fancytree.gridnav.js" type="text/javascript"></script>
+  
+  <script src="jszip/dist/jszip.js" type="text/javascript" ></script>
+
+  <script src="DataModel.js" type="text/javascript"></script>
+  <script src="StringUtilityFunctions.js" type="text/javascript"></script>
+  <script src="Treeview.js" type="text/javascript"></script>
+  <script src="DataModelToSwift.js" type="text/javascript"></script>
+  <script src="DataModelToObjC.js" type="text/javascript"></script>
+  <script src="SaveLoad.js" type="text/javascript"></script>
+  <script src="ExportZipFile.js" type="text/javascript"></script>
+  <script src="SampleData.js" type="text/javascript"></script>
+
+
+  <script type="text/javascript">
+
+
+  //SINGLETON MY-DATA-MODEL
+  var myDataModel = new DataModel(1);
+
+
+  //treeview--------------------------------------------------------------------------------------------
+
+  $(function(){
+    var myRoot = $("#tree").fancytree("getRootNode");
+
+    if (loadModel(1)==null){
+      //initial dummy class and property
+      var myClass = new DataClass("MyClass"),
+      myProperty = new Property("myProperty","Object");
+      myClass.addProperty(myProperty);
+      myDataModel.addClass(myClass);
+      modelToTreeView(myRoot, myDataModel);
+      saveModel(myDataModel,1);
+    }else{
+      myDataModel = loadModel(1);
+      modelToTreeView(myRoot, myDataModel);
+    }
+
+    $("#swiftPreview").click(function(event){
+      window.open("Preview.html?type=swift", "_blank");
+    });
+
+    $("#objcPreview").click(function(event){
+      window.open("Preview.html?type=objc", "_blank");
+    });
+
+    $("#swiftExport").click(function(event){
+      createSwiftZip(myDataModel);
+    });
+
+    $("#objcExport").click(function(event){
+      createObjCZip(myDataModel);
+    });
+
+  });
+  
+ </script>
+
+</head>
+
+<body class="main">
+
+ <h2>JSON Model Exporter</h2>
+
+  <p> 
+    <button id="swiftPreview">Preview Swift Code</button> 
+    <button id="objcPreview">Preview Objective-C Code</button> 
+  </p>
+
+  <p> 
+      <button id="swiftExport">Export Swift Code</button> 
+      <button id="objcExport">Export Objective-C Code</button> 
+  </p>
+
+ <table id="tree">
+   <colgroup>
+   <col width="250px"></col>
+   <col width="250px"></col>
+   </colgroup>
+   <thead>
+     <tr> <th></th> <th>Type</th> </tr>
+   </thead>
+   <tbody>
+   </tbody>
+ </table>
+</body>
+</html>
