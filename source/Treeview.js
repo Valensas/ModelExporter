@@ -1,5 +1,6 @@
   //treeview----------------------------------------------------------------------------------------------
 $(function(){
+  var dataBeforeEdit;
   $("#tree").fancytree({
     source:[],
     extensions: ["edit", "table", "gridnav"],
@@ -7,6 +8,7 @@ $(function(){
     edit:{
       triggerStart: ["f2", "dblclick", "shift+click", "mac+enter"],
       beforeEdit: function(event, data){
+        dataBeforeEdit = data.node.title;
         // Return false to prevent edit mode
       },
       edit: function(event, data){
@@ -23,6 +25,7 @@ $(function(){
       save: function(event, data){
         // Save data.input.val() or return false to keep editor open
         data.node.data.object.setName(data.input.val());
+        replaceTypeName(dataBeforeEdit,data.input.val());
         // We return true, so ext-edit will set the current user input
         // as title
         return true;
@@ -42,7 +45,7 @@ $(function(){
       }
     },
     table: {
-      indentation: 20,
+      indentation: 5,
       nodeColumnIdx: 0
     },
     gridnav: {
@@ -108,22 +111,26 @@ $(function(){
       }
       break;
     case "addChild":
-      if (node.isChildOf(tree.getRootNode())){
-        var obj = new Property("","");
-        node.data.object.addProperty(obj);
-        node.editCreateNode("child", {title:"", data:{object:obj}, folder:false});
+      if(node){
+        if (node.isChildOf(tree.getRootNode())){
+          var obj = new Property("","");
+          node.data.object.addProperty(obj);
+          node.editCreateNode("child", {title:"", data:{object:obj}, folder:false});
+        }
       }
       break;
     case "addSibling":
       var obj = new DataClass("");
-      if (node.isChildOf(tree.getRootNode())){
-        myDataModel.addClass(obj);
-        node.editCreateNode("after", {title:"", data:{object:obj}, folder:true});
-      }
-      else{
-        var obj = new Property("","");
-        node.data.object.parent.addProperty(obj);
-        node.editCreateNode("after", {title:"", data:{object:obj}, folder:false});
+      if(node){
+        if (node.isChildOf(tree.getRootNode())){
+          myDataModel.addClass(obj);
+          node.editCreateNode("after", {title:"", data:{object:obj}, folder:true});
+        }
+        else{
+          var obj = new Property("","");
+          node.data.object.parent.addProperty(obj);
+          node.editCreateNode("after", {title:"", data:{object:obj}, folder:false});
+        }
       }
       break;
     default:
@@ -154,31 +161,55 @@ $(function(){
     }
   });
 
-    $("#tree").delegate("input[name=typeBox]", "change", function(e){
-      var node = $.ui.fancytree.getNode(e);
-      if(e.target.value != "" && node.title != "" && e.target.value != node.data.object.type.toString){
-        e.stopPropagation();  // prevent fancytree activate for this row
-        node.data.object.setType(e.target.value);
-        $("#tree").trigger("nodeCommand", {cmd: "addSibling"});
-      }
-    });
+  $("#tree").delegate("input[name=typeBox]", "change", function(e){
+    var node = $.ui.fancytree.getNode(e);
+    if(e.target.value != "" && node.title != "" && e.target.value != node.data.object.type.toString){
+      e.stopPropagation();  // prevent fancytree activate for this row
+      node.data.object.setType(e.target.value);
+      $("#tree").trigger("nodeCommand", {cmd: "addSibling"});
+    }
+  });
 });
 
 function modelToTreeView (root, dataModel) {
   root.removeChildren();
+  var childList = [];
+  var grandChildList = [];
   for (var i = 0 ; i<dataModel.classArray.length ; i++){
-    root.addChildren({
+    childList.push({
       title: dataModel.classArray[i].name,
       data : {object:dataModel.classArray[i]},
       folder: true
     });
+    grandChildList[i]=[];
     for (var j = 0 ; j<dataModel.classArray[i].propertyArray.length ; j++){
-      root.children[i].addChildren({
+      grandChildList[i].push({
         title : dataModel.classArray[i].propertyArray[j].name,
         data : {object:dataModel.classArray[i].propertyArray[j]},
         folder : false
       });
-      root.children[i].setExpanded();
     }
   }
+  root.addChildren(childList);
+  for (var i = 0 ; i<childList.length ; i++){
+    root.children[i].addChildren(grandChildList[i]);
+  }
+  saveModel(dataModel,1);
+}
+
+function replaceTypeName(oldStr, newStr){
+  var root = $("#tree").fancytree("getRootNode");
+  var classArray= root.children
+  for (var i = 0; i < classArray.length; i++){
+    for (var j = 0; j<classArray[i].children.length; j++){
+      var obj = classArray[i].children[j].data.object;
+      var input = document.getElementById("typeBox_"+obj.parent.name+"_"+obj.name);
+      if(input){
+        var typeStr = input.value;
+        var newType = typeStr.replace(oldStr, newStr);
+        obj.setType(newType);
+      }
+    }
+  }
+  modelToTreeView(root,myDataModel)
 }

@@ -3,18 +3,22 @@ function modelToSwift(dataModel){
   for (var i = 0; i<dataModel.classArray.length; i++){
     var swiftClass = "\n";
     var myDataClass = dataModel.classArray[i];
-    swiftClass += classDeclerationToSwift(myDataClass.name);
-    for (var j = 0; j<myDataClass.propertyArray.length; j++){
-      var myProperty = myDataClass.propertyArray[j];
-      swiftClass += propertyDeclerationToSwift(myProperty.name,myProperty.type);
+    if(dataModel.classArray[i].container === "true"){
+      swiftClass += containerClassToSwift(dataModel.classArray[i].name,dataModel.classArray[i].propertyArray[0].name);
+    }else{
+      swiftClass += classDeclerationToSwift(myDataClass.name);
+      for (var j = 0; j<myDataClass.propertyArray.length; j++){
+        var myProperty = myDataClass.propertyArray[j];
+        swiftClass += propertyDeclerationToSwift(myProperty.name,myProperty.type);
+      }
+      swiftClass += initializerToSwift();
+      for (var j = 0; j<myDataClass.propertyArray.length; j++){
+        var myProperty = myDataClass.propertyArray[j];
+        swiftClass += propertyInitToSwift(myProperty.name, myProperty.type, 2);
+      }
+      swiftClass += endOfClassToSwift();
     }
-    swiftClass += initializerToSwift();
-    for (var j = 0; j<myDataClass.propertyArray.length; j++){
-      var myProperty = myDataClass.propertyArray[j];
-      swiftClass += propertyInitToSwift(myProperty.name, myProperty.type, 2);
-    }
-    swiftClass += endOfClassToSwift();
-    swiftList.push(swiftClass);
+  swiftList.push(swiftClass);
   }
   return swiftList;
 }
@@ -37,6 +41,22 @@ function propertyDeclerationToSwift(name, type){
   }
   return str;
 }
+
+function containerClassToSwift(className,propertyName){
+  var str = 'import Foundation\n\n';
+  str += String.format('class {0} {\n\n', className);
+  str += indent(1);
+  str += String.format('var {0} : [{1}]?\n',propertyName,capitaliseFirstLetter(propertyName));
+  str += '\n'+indent(1);
+  str += String.format('init (jsonArray:NSArray) {\n');
+  str += indent(2);
+  str += 'for dict in jsonArray as? NSDictionary{\n';
+  str += indent(3);
+  str += String.format('{0}.append({1}(jsonDict: dict))\n',propertyName,capitaliseFirstLetter(propertyName));
+  str += indent(2)+"}\n"+indent(1)+"}\n\n}\n\n\n";
+  return str;
+}
+
 function initializerToSwift(){
   var str = '\n'+indent(1);
   str += String.format('init (jsonDict:NSDictionary) {\n');

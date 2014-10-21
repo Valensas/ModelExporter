@@ -1,6 +1,6 @@
 //DATAMODEL CLASS----------------------------------------------------------------------------------------
 
-function DataModel(myId){
+function DataModel(){
   this.classArray = [];
 }
 
@@ -33,11 +33,16 @@ DataModel.prototype.getClass = function( aName ){
 function DataClass( aName ){
   this.propertyArray = [];
   this.name = aName;
+  this.container = false;
   this.parentModel = null;
 }
 
 DataClass.prototype.setName = function( aName ){
   this.name = aName;
+}
+
+DataClass.prototype.setContainer = function(bool){
+  this.container = bool;
 }
 
 DataClass.prototype.addProperty = function( aProperty ){
@@ -107,6 +112,10 @@ function DictType (aKeyType, aValueType){
 
 //converts string to Type
 function stringToType(typeString){
+  if(typeString === null){
+    alert("invalid type");
+    return;
+  }
   if (typeString.charAt(0)!="[" || typeString.charAt(typeString.length-1)!="]"){
     if(typeString === "Bool" || typeString === "Int" ||
      typeString === "Double" || typeString === "Float" ||

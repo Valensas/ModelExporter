@@ -2,27 +2,62 @@ function modelToObjC(dataModel){
   var objCList = [];
   for (var i = 0; i<dataModel.classArray.length; i++){
     var objCHeader = "";
-    var myDataClass = dataModel.classArray[i];
-    //write header file
-    objCHeader += headerDeclerationToObjC(myDataClass);
-    for (var j = 0; j<myDataClass.propertyArray.length; j++){
-      var myProperty = myDataClass.propertyArray[j];
-      objCHeader += propertyDeclerationToObjC(myProperty.name,myProperty.type);
-    }
-    objCHeader += headerEndToObjC();
-    //write m file
     var objCClass = "";
-    objCClass += classDeclerationToObjC(myDataClass.name)
-    for (var j = 0; j<myDataClass.propertyArray.length; j++){
-      var myProperty = myDataClass.propertyArray[j];
-      objCClass += propertyInitToObjC(myProperty.name, myProperty.type, 2);
+
+    var myDataClass = dataModel.classArray[i];
+
+    objCHeader += headerDeclerationToObjC(myDataClass);
+
+    if( myDataClass.container === "true" ){
+      objCHeader += containerHeaderToObjC(myDataClass.propertyArray[0].name);
+      objCClass += containerImplementationToObjC(myDataClass.name,myDataClass.propertyArray[0].name);
+    } else {
+        //write header file
+      for (var j = 0; j<myDataClass.propertyArray.length; j++){
+        var myProperty = myDataClass.propertyArray[j];
+        objCHeader += propertyDeclerationToObjC(myProperty.name,myProperty.type);
+      }
+      objCHeader += headerEndToObjC();
+      //write m file
+      objCClass += classDeclerationToObjC(myDataClass.name)
+      for (var j = 0; j<myDataClass.propertyArray.length; j++){
+        var myProperty = myDataClass.propertyArray[j];
+        objCClass += propertyInitToObjC(myProperty.name, myProperty.type, 2);
+      }
+      objCClass += endOfClassToObjC();
     }
-    objCClass += endOfClassToObjC();
+    
 
     var objCobject = {headerStr:objCHeader, classStr:objCClass }
     objCList.push(objCobject);
   }
   return objCList;
+}
+function containerHeaderToObjC(propertyName){
+  var str = String.format('@property (nonatomic, strong) NSArray *{0};\n',propertyName);
+  str += '\n-(instancetype)initWithJson:(NSArray*) arr;\n';
+  str += '\n@end\n\n\n'
+  return str;
+}
+function containerImplementationToObjC(className, propertyName){
+  var str = String.format('#import "{0}.h"\n\n@implementation {0}\n\n',className);
+  str += '-(instancetype)initWithJson:(NSArray*) arr {\n\n';
+  str += indent(1);
+  str += 'if (self = [super init]) {\n\n';
+  str += indent(2);
+  str += String.format('NSMutableArray *{0}_dummy = [NSMutableArray array];\n',propertyName);
+  str += indent(2);
+  str += String.format('for (NSDictionary *{0}_val in arr){\n',propertyName);
+  str += indent(3);
+  str += String.format('{0} *{1}_val_dummy = [[{0} alloc] initWithJson:{1}_val];\n',capitaliseFirstLetter(propertyName),propertyName);
+  str += indent(3);
+  str += String.format('[{0}_dummy addObject:{0}_val_dummy];\n',propertyName);
+  str += indent(2)+"}\n";
+  str += indent(2);
+  str += String.format('self.{0} = {0}_dummy;\n\n',propertyName);
+  str += indent(1)+"}\n\n";
+  str += indent(1)+'return self;\n\n}\n\n@end\n\n\n';
+  return str;
 }
 function headerDeclerationToObjC(myClass){
   var str = ('#import "Foundation/Foundation.h"\n');
