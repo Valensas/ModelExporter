@@ -1,0 +1,516 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Model Exporter</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/jquery.fancytree/2.4.1/skin-bootstrap/ui.fancytree.min.css">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/jquery.fancytree/2.4.1/skin-lion/ui.fancytree.min.css">
+    <link href="highlight/xcode.css" rel="stylesheet">
+    <link href="css/footer.css" rel="stylesheet">
+
+
+    <script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.11.2/jquery-ui.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/jquery.fancytree/2.4.1/jquery.fancytree-all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.4.0/jszip.js"></script>
+    <script src="highlight/highlight.pack.js"></script>
+
+    <script src="js/DataModel.js" type="text/javascript"></script>
+    <script src="js/StringUtilityFunctions.js" type="text/javascript"></script>
+    <script src="js/Treeview.js" type="text/javascript"></script>
+    <script src="js/DataModelToSwift.js" type="text/javascript"></script>
+    <script src="js/DataModelToObjC.js" type="text/javascript"></script>
+    <script src="js/SaveLoad.js" type="text/javascript"></script>
+    <script src="js/ExportZipFile.js" type="text/javascript"></script>
+    <script src="js/JSONtoModel.js" type="text/javascript"></script>
+
+
+    <script type="text/javascript">
+      //SINGLETON MY-DATA-MODEL
+      var model = new DataModel();
+      var jsonArray = [];
+
+      $(function(){
+        console.log("Model initialization")
+
+        //global root
+        root = $("#tree").fancytree("getRootNode");
+
+
+        if(localStorage.getItem(1+"_saved_successfully")==="true"&&isSaved(1)===true){
+          model = loadModel(1);
+          modelToTreeView(root, model);
+        }else{
+          model = new DataModel();
+          var myClass = new DataClass("MyClass"),
+          myProperty = new Property("myProperty","Object");
+          myClass.addProperty(myProperty);
+          model.addClass(myClass);
+          modelToTreeView(root, model);
+          saveModel(model,1);
+        }
+
+        root.visit(function(node){
+          node.setExpanded(true);
+        });
+      });
+    </script>
+
+  </head>
+
+  <body>
+  	<div class="container">
+
+      <h2 style="text-align: center;">Model Exporter</h2>
+
+      <div class="row" id="top">
+        <div class="col-md-12" >
+          <div class="btn-toolbar" role="toolbar">
+            <div class="btn-group">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                Import <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                <li><a id="json-text-input-button" data-target="#json-text-input-modal" data-toggle="modal">Text Input</a></li>
+                <li><a id="json-file-select-button" data-target="#json-file-select-modal" data-toggle="modal">File Input</a></li>
+                <li><a id="json-get-url-button" data-target="#json-get-url-modal" data-toggle="modal">Get URL Input</a></li>
+                <li><a id="json-post-url-button" data-target="#json-post-url-modal" data-toggle="modal">Post URL Input</a></li>
+              </ul>
+            </div>
+            <div class="btn-group">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                Export <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                <li><a id="swift-preview-button" data-target="#swift-modal" data-toggle="modal">Swift</a></li>
+                <li><a id="objc-preview-button" data-target="#objc-modal" data-toggle="modal">Objective-C</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" id="bot">
+        <div class="col-md-12" >
+          <table class="table" id="tree">
+            <colgroup>
+              <col width="250px"></col>
+            </colgroup>
+            <thead>
+              <tr> 
+                <th>Name</th> 
+                <th>Type</th> 
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table> 
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="container">
+        <a href="http://valensas.com/"><img src="assets/valensas_logo.png"></a> 
+<!--         <p class="text-muted">2014</p>
+ -->      </div>
+    </div>
+
+    <!-- Text Input Modal-->
+    <div id="json-text-input-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+              &times;
+            </button>
+            <h4 class="modal-title">JSON Text Input</h4>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="text-input-textarea">Enter your JSON: </label>
+              <br></br>
+              <textarea class="form-control" rows="5" id="text-input-textarea"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="checkbox" style="float:left">
+              <label>
+                <input type="checkbox" id="text-input-replace-model-checkbox" value="" checked>
+                Replace Entire Model
+              </label>
+            </div>
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="text-input-import-button">Import</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Select Modal-->
+    <div id="json-file-select-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+              &times;
+            </button>
+            <h4 class="modal-title">JSON File Select</h4>
+          </div>
+          <div class="modal-body">
+            <div>Select your JSON File</div>
+            <span class="btn btn-default btn-file">
+              <input type="file" id="file-select-field" multiple>
+            </span>
+          </div>
+          <div class="modal-footer">
+            <div class="checkbox" style="float:left">
+              <label>
+                <input type="checkbox" value="" id="file-select-replace-model-checkbox" checked>
+                Replace Entire Model
+              </label>
+            </div>
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="file-select-import-button" disabled>Import</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Get URL Modal-->
+    <div id="json-get-url-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+              &times;
+            </button>
+            <h4 class="modal-title">JSON Get URL</h4>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="get-url-textbox">URL:</label>
+              <input type="url" class="form-control" id="get-url-textbox">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="checkbox" style="float:left">
+              <label>
+                <input type="checkbox" value="" id="get-url-replace-model-checkbox" checked>
+                Replace Entire Model
+              </label>
+            </div>
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="get-url-import-button" >Import</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Post URL Modal-->
+    <div id="json-post-url-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+              &times;
+            </button>
+            <h4 class="modal-title">JSON Post URL</h4>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="post-url-textbox">URL:</label>
+              <input type="url" class="form-control" id="post-url-textbox">
+            </div>
+            <div class="form-group">
+              <label for="text-input-textarea">Enter your post JSON: </label>
+              <br></br>
+              <textarea class="form-control" rows="5" id="text-input-textarea"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="checkbox" style="float:left">
+              <label>
+              <input type="checkbox" value="" id="post-url-replace-model-checkbox" checked>
+              Replace Entire Model
+              </label>
+            </div>
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="post-url-import-button">Import</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Swift Preview-->
+    <div id="swift-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+              &times;
+            </button>
+            <h4 class="modal-title">Swift Preview</h4>
+          </div>
+          <div class="modal-body">
+            <pre><code id="swift-code-field"></code></pre>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="swift-export-button">Download as .zip file</button>
+          </div>
+        </div>        
+      </div>
+    </div>
+
+    <!-- Objc Preview-->
+    <div id="objc-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+              &times;
+            </button>
+            <h4 class="modal-title">Objective-C Preview</h4>
+          </div>
+          <div class="modal-body">
+            <pre><code id="objc-code-field"></code></pre>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="objc-export-button">Download as .zip file</button>
+          </div>
+        </div>        
+      </div>
+    </div>
+
+    <script>
+      //Text Input Handler
+      $("#text-input-import-button").click(function(event){
+        console.log("text-input-import-button clicked")
+        var replaceMode = document.getElementById("text-input-replace-model-checkbox").checked;
+        var jsonString = document.getElementById("text-input-textarea").value;
+        if(jsonString === ""){
+          alert("Text area is empty. Please enter a valid JSON");
+          return;
+        }
+        var jsonObject = tryParseJSON(jsonString)
+        if (jsonObject === false){
+          alert("Please enter a valid JSON");
+          return;
+        }
+
+        if(replaceMode === true){
+          jsonArray=[];
+          model = new DataModel();
+        }
+        jsonArray.push(jsonObject);
+        jsonToModelPreparer(model);
+        modelToTreeView(root, model);
+        $("#json-text-input-modal").modal('hide');
+      });
+
+      //File Select Handler
+      $("#file-select-field").change(function(event){
+        console.log("file-select-field is changed")
+
+        var fileSelectField= document.getElementById("file-select-field");
+        var textType = /text.*/;
+        jsonObjects = []
+        jsonTypes = []
+        for(var i = 0; i<fileSelectField.files.length; i++){
+          if (fileSelectField.files[i].type.match(textType)){
+            var reader = new FileReader();
+            reader.onload = function(fileText) {
+              jsonObject = tryParseJSON(fileText.target.result)
+              if (jsonObject === false){
+                alert("Please choose files that has valid JSONs");
+                jsonObjects = [];
+                jsonTypes = [];
+                return;
+              }else{
+                jsonObjects.push(jsonObject);
+                var firstChar = fileText.target.result.charAt(0);
+                if(firstChar === '{'){
+                  jsonTypes.push("dict")
+                }else if(firstChar === '['){
+                  jsonTypes.push("array")
+                }
+              }
+            }
+            reader.readAsText(fileSelectField.files[i]);  
+          }else{
+            alert("Type of "+ fileSelectField.files[i].name +" is not supported!");
+            return;
+          }
+        }
+        $('#file-select-import-button').prop('disabled', false);
+      });
+
+      //File Select Import Button Handler
+      $("#file-select-import-button").click(function(event){
+        console.log("file-select-import-button clicked")
+
+        var replaceMode = document.getElementById("file-select-replace-model-checkbox").checked;
+
+        if(replaceMode === true){
+          jsonArray=[];
+          model = new DataModel();
+        }
+        for(var i = 0; i<jsonObjects.length; i++){
+          if( jsonTypes[i] === 'dict'){
+            jsonArray.push({json:jsonObjects[i], typeOfJSON :'dict'});
+          }else if(firstChar === 'array'){
+            jsonArray.push({json:jsonObjects[i], typeOfJSON :'array'});   
+          }
+          jsonToModelPreparer(model);
+          modelToTreeView(root, model);
+        }
+        jsonObjects = [];
+        jsonTypes = [];
+
+        $('#file-select-import-button').prop('disabled', true);
+        $('#json-file-select-modal').modal('hide');
+      });
+
+      $("#get-url-import-button").click(function(event){
+        console.log("get-url-import-button clicked")
+        var replaceMode = document.getElementById("get-url-replace-model-checkbox").checked;
+        var url = document.getElementById("get-url-textbox").value;
+        if(url === ""){
+          alert("Textbox is empty. Please enter a valid URL");
+          return;
+        }
+        $.get(url, function(data){
+          if(data != null ){
+            if(replaceMode === true){
+              jsonArray=[];
+              model = new DataModel();
+            }
+            var firstChar = JSON.stringify(data).charAt(0);
+            if(firstChar === '{'){
+              jsonArray.push({json:data, typeOfJSON :'dict'});
+              jsonToModelPreparer(model);
+              modelToTreeView(root, model); 
+            }else if(firstChar === '['){
+              jsonArray.push({json:data, typeOfJSON :'array'});
+              jsonToModelPreparer(model);
+              modelToTreeView(root, model);  
+            }
+          }else{
+            alert("Invalid url or data");
+            return;
+          }
+        })
+        .done(function() {
+          $("#json-get-url-modal").modal('hide');
+        })
+        .fail(function() {
+          alert("Error occurred. Please check URL you provide is valid, and allows cross-domain AJAX requests from this domain." );
+        });
+      });
+
+      $("#post-url-import-button").click(function(event){
+        console.log("post-url-import-button clicked")
+        var replaceMode = document.getElementById("post-url-replace-model-checkbox").checked;
+        var url = document.getElementById("post-url-textbox").value;
+        if(url === ""){
+          alert("URL textbox is empty. Please enter a valid URL");
+          return;
+        }
+        var postData = document.getElementById("text-input-textarea").value;   
+
+        $.get(url, postData, function(data){
+          if(data != null ){
+            if(replaceMode === true){
+              jsonArray=[];
+              model = new DataModel();
+            }
+            var firstChar = JSON.stringify(data).charAt(0);
+            if(firstChar === '{'){
+              jsonArray.push({json:data, typeOfJSON :'dict'});
+              jsonToModelPreparer(model);
+              modelToTreeView(root, model); 
+            }else if(firstChar === '['){
+              jsonArray.push({json:data, typeOfJSON :'array'});
+              jsonToModelPreparer(model);
+              modelToTreeView(root, model);  
+            }
+          }else{
+            alert("Invalid url or data");
+            return;
+          }
+        }).done(function() {
+          $("#json-post-url-modal").modal('hide');
+        })
+        .fail(function() {
+          alert("Error occurred. Please check URL you provide is valid, and allows cross-domain AJAX requests from this domain." );
+        });
+        ;
+      });
+
+      $("#swift-preview-button").click(function(event){
+        console.log("swift-preview-button clicked")
+        var code = modelToSwift(model);
+        $("#swift-code-field").text("");
+        for (var i = 0; i<code.length; i++){
+          $("#swift-code-field").append(code[i]);
+        }
+        $('pre code').each(function(i, block) {
+           hljs.highlightBlock(block);
+        });
+      });
+
+      $("#objc-preview-button").click(function(event){
+        console.log("objc-preview-button clicked")
+        var code = modelToObjC(model);
+        $("#objc-code-field").text("");
+        for (var i = 0; i<code.length; i++){
+          $("#objc-code-field").append(code[i].headerStr);
+          $("#objc-code-field").append(code[i].classStr);
+        }
+        $('pre code').each(function(i, block) {
+           hljs.highlightBlock(block);
+        });
+      });
+
+      $("#swift-export-button").click(function(event){
+        console.log("swift-export-button clicked")
+        createSwiftZip(model);
+      });
+
+      $("#objc-export-button").click(function(event){
+        console.log("objc-export-button clicked")
+        createObjCZip(model);
+      });
+
+    //   $("#deleteAll").click(function(event){
+    //     console.log("deleteAll is triggered")
+    //     model = new DataModel();
+    //     jsonArray = [];
+    //     localStorage.clear();
+    //     modelToTreeView(root, model);
+    //   });
+
+    </script>
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-46307955-5', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+
+  </body>
+</html>
