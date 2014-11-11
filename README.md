@@ -8,7 +8,7 @@ Current import options: Manual
 
 How To Use It
 -------------
-It's just a couple of HTML, CSS and JS files. So, either download source files and open in your browser locally, or simply [use this link](http://rawgit.com/Valensas/ModelExporter/master/source/ModelExporter.html) remotely.
+It's just a couple of HTML, CSS and JS files. So, either download source files and open in your browser locally, or simply [use this link](http://rawgit.com/Valensas/ModelExporter/master/source/index.html) remotely.
 
 
 Current version of Model Exporter supports two programming languages : Swift & Objective-C
